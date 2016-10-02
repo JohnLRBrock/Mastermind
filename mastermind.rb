@@ -6,7 +6,6 @@
 
 # supplies structure for the game
 class Mastermind
-  attr_writer :won
   def initialize
     @turn = 1
     @won = false
@@ -43,7 +42,7 @@ class Mastermind
 
   def defeat(passcode)
     @lost = true
-    "That was your last turn! You lost D: The password was #{passcode}.\n"
+    "That was your last turn! You lost D: The password was #{passcode.passcode}.\n"
   end
 
   def computer_defeat
@@ -52,16 +51,30 @@ class Mastermind
   end
 
   def human_guesser
-    passcode = Passcode.new
-    passcode.create_passcode
+    passcode = create_passcode
     turn(passcode) until @lost || @won
+  end
+
+  def get_code
+    code = Passcode.new
+    loop do
+      user_code = gets.chomp.chars
+      if user_code.size == code.size && illegal_characters?(user_code)
+        4.times { |i| code.add(Digit.new(user_code[i]))}
+        break
+      elsif user_code.size != code.size
+        puts "Your guess must have #{@size} characters."
+      else
+        puts 'Please only use the numbers 1-6 in your answers.'
+      end
+    end
+    code
   end
 
   def turn(passcode)
     puts "Turn #{@turn}"
     puts 'Guess the passcode.'
     guess = get_code
-    p guess
     check_result = passcode.check_passcode(guess)
     puts check_result.result
     puts victory if check_result.victory? 
@@ -78,7 +91,6 @@ class Mastermind
   def computer_turn(passcode)
     puts "Turn #{@turn}"
     guess = computer_guess(passcode)
-    p guess
     check_result = passcode.check_passcode(guess)
     puts check_result.result
     puts computer_victory if check_result.victory?
@@ -86,15 +98,51 @@ class Mastermind
     puts computer_defeat if @turn == 13
     passcode
   end
+
+  def create_passcode
+    passcode = Passcode.new
+    4.times { passcode.add (Digit.new(rand(1..6).to_s)) }
+    passcode
+  end
+
+  def illegal_characters?(guess)
+    no_illegal_characters = true
+    guess.each{ |digit| no_illegal_characters = false unless ('1'..'6').cover?(digit) }
+    no_illegal_characters
+  end
+
+  # return a guess with the correct digit if it's guessed it before and a rand otherwise
+  def computer_guess(passcode)
+    guess = Passcode.new
+    4.times do |i| 
+      if passcode[i].position
+        guess.add(Digit.new(passcode[i].number))
+      else
+        guess.add(Digit.new(rand(1..6).to_s))
+      end
+    end
+    puts "The computer's guess is #{guess.passcode}"
+    guess
+  end
+
 end
 
 class Passcode
-
   attr_accessor :passcode
 
   def initialize
     @passcode = []
     @size = 4
+  end
+
+  def passcode
+    if @passcode.empty?
+      return puts "The Passcode is empty"
+    else
+      code = Array.new
+      @passcode.each { |digit| code.push(digit.number) }
+      return code.join(", ")
+    end
   end
 
   def size
@@ -113,33 +161,6 @@ class Passcode
     @passcode.push(digit)
   end
 
-  def create_passcode
-    4.times { |i| @passcode[i] = Digit.new(rand(1..6).to_s) }
-  end
-  
-  def illegal_characters?(guess)
-    no_illegal_characters = true
-    guess.each{ |digit| no_illegal_characters = false unless ('1'..'6').cover?(digit) }
-    no_illegal_characters
-  end
-
-  def get_code
-    code = Passcode.new
-    loop do
-      user_code = gets.chomp.chars
-      if user_code.size == code.size && illegal_characters?(user_code)
-        4.times { |i| code.add(Digit.new(user_code.unshift))}
-        break
-      elsif user_code.size != code.size
-        puts "Your guess must have #{@size} characters."
-      else
-        puts 'Please only use the numbers 1-6 in your answers.'
-      end
-    end
-    code
-  end
-
-  #TODO: undefined method 'number' on nilclass (Probably guess)
   def position_check(guess)
     4.times do |i|
       if guess[i].number == @passcode[i].number
@@ -182,37 +203,26 @@ class Passcode
   def correct_names
     count = 0
     @passcode.each { |digit| count += 1 if digit.name_only?}
+    count
   end
 
-  #TODO: guess has an empty passcode
   # compare two passcodes and return a string
   def check_passcode(guess)
     guess = position_check(guess)
     guess = name_only_check(guess)
-    result = "#{guess.correct_positions}: Correct postion.\n#{guess.correct_names}: Correct digit.\n\n"
+    result = "#{guess.correct_positions}: Correct position.\n#{guess.correct_names}: Correct digit.\n\n"
     if guess.all_correct?
       return Result.new(result, true)
     else
       return Result.new(result, false)
     end  
   end
-
-  # return a guess with the correct digit if it's guessed it before and a rand otherwise
-  def computer_guess(passcode)
-    guess = Passcode.new
-    4.times do |i| 
-      if passcode[i].position
-        guess.passcode.push(Digit.new(passcode[i].number))
-      else
-        guess.passcode.push(Digit.new(rand(1..6).to_s))
-      end
-    end
-    guess
-  end
 end
 
 class Digit
+
   attr_accessor :number, :position, :name_only
+  
   def initialize(number)
     @number = number
     @position = false
@@ -237,8 +247,13 @@ class Result
     @result = result
     @victory = victory
   end
+
   def victory?
     @victory
+  end
+
+  def result
+    @result
   end
 end
 
