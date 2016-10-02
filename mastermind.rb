@@ -3,7 +3,6 @@
 # The Odin Project
 # Mastermind
 
-
 # supplies structure for the game
 class Mastermind
   def initialize
@@ -20,21 +19,17 @@ class Mastermind
 
   # returns true if they want to be the code maker
   def welcome_message
-    puts "----------------------\n"
-    puts '    WELCOME HUMAN'
-    puts "----------------------\n"
-    puts 'Do you want to the be the code maker or code breaker? (m/b)'
-
-    get_decision("m","b")
+    puts "----------------------\n\n"  \
+         "    WELCOME HUMAN\n----------------------\n\n"\
+         'Do you want to the be the code maker or code breaker? (m/b)'
+    get_decision('m', 'b')
   end
 
-  # TODO: nothing calls this
   def victory
     @won = true
     "That's right! You guessed all four! You won :D!\n"
   end
 
-  #TODO: nothing calls this
   def computer_victory
     @won = true
     "The computer guessed correct! The Computer wins!\n"
@@ -42,7 +37,8 @@ class Mastermind
 
   def defeat(passcode)
     @lost = true
-    "That was your last turn! You lost D: The password was #{passcode.passcode}.\n"
+    'That was your last turn! You lost D: ' \
+    "The password was #{passcode.passcode}.\n"
   end
 
   def computer_defeat
@@ -60,7 +56,7 @@ class Mastermind
     loop do
       user_code = gets.chomp.chars
       if user_code.size == code.size && illegal_characters?(user_code)
-        4.times { |i| code.add(Digit.new(user_code[i]))}
+        4.times { |i| code.add(Digit.new(user_code[i])) }
         break
       elsif user_code.size != code.size
         puts "Your guess must have #{@size} characters."
@@ -77,7 +73,7 @@ class Mastermind
     guess = get_code
     check_result = passcode.check_passcode(guess)
     puts check_result.result
-    puts victory if check_result.victory? 
+    puts victory if check_result.victory?
     @turn += 1
     puts defeat(passcode) if @turn == 13
   end
@@ -101,20 +97,20 @@ class Mastermind
 
   def create_passcode
     passcode = Passcode.new
-    4.times { passcode.add (Digit.new(rand(1..6).to_s)) }
+    4.times { passcode.add(Digit.new(rand(1..6).to_s)) }
     passcode
   end
 
   def illegal_characters?(guess)
-    no_illegal_characters = true
-    guess.each{ |digit| no_illegal_characters = false unless ('1'..'6').cover?(digit) }
-    no_illegal_characters
+    legal_digits = true
+    guess.each { |digit| legal_digits = false unless ('1'..'6').cover?(digit) }
+    legal_digits
   end
 
-  # return a guess with the correct digit if it's guessed it before and a rand otherwise
+  # computer remembers correctly guess digits
   def computer_guess(passcode)
     guess = Passcode.new
-    4.times do |i| 
+    4.times do |i|
       if passcode[i].position
         guess.add(Digit.new(passcode[i].number))
       else
@@ -124,10 +120,11 @@ class Mastermind
     puts "The computer's guess is #{guess.passcode}"
     guess
   end
-
 end
 
+# the codes used in the game
 class Passcode
+  attr_reader :size
   attr_accessor :passcode
 
   def initialize
@@ -136,17 +133,10 @@ class Passcode
   end
 
   def passcode
-    if @passcode.empty?
-      return puts "The Passcode is empty"
-    else
-      code = Array.new
-      @passcode.each { |digit| code.push(digit.number) }
-      return code.join(", ")
-    end
-  end
-
-  def size
-    @size
+    return puts 'The Passcode is empty' if @passcode.empty?
+    code = []
+    @passcode.each { |digit| code.push(digit.number) }
+    code.join(', ')
   end
 
   def [](ind)
@@ -164,8 +154,8 @@ class Passcode
   def position_check(guess)
     4.times do |i|
       if guess[i].number == @passcode[i].number
-        guess[i].position = true 
-        @passcode[i].position = true 
+        guess[i].position = true
+        @passcode[i].position = true
       end
     end
     guess
@@ -176,11 +166,9 @@ class Passcode
   def name_only_check(guess)
     4.times do |i|
       4.times do |j|
-        if guess[i].number == @passcode[j].number 
+        if guess[i].number == @passcode[j].number
           unless @passcode[i].position || @passcode[i].name_only
-            unless i == j
-              guess[i].name_only = true
-            end
+            guess[i].name_only = true unless i == j
           end
         end
       end
@@ -196,13 +184,13 @@ class Passcode
 
   def correct_positions
     count = 0
-    @passcode.each {|digit| count += 1 if digit.position?}
+    @passcode.each { |digit| count += 1 if digit.position? }
     count
   end
 
   def correct_names
     count = 0
-    @passcode.each { |digit| count += 1 if digit.name_only?}
+    @passcode.each { |digit| count += 1 if digit.name_only? }
     count
   end
 
@@ -210,27 +198,21 @@ class Passcode
   def check_passcode(guess)
     guess = position_check(guess)
     guess = name_only_check(guess)
-    result = "#{guess.correct_positions}: Correct position.\n#{guess.correct_names}: Correct digit.\n\n"
-    if guess.all_correct?
-      return Result.new(result, true)
-    else
-      return Result.new(result, false)
-    end  
+    result = "#{guess.correct_positions}: Correct position.\n" \
+             "#{guess.correct_names}: Correct digit.\n\n"
+    return Result.new(result, true) if guess.all_correct?
+    Result.new(result, false)
   end
 end
 
+# digits in a code
 class Digit
+  attr_reader :number
 
-  attr_accessor :number, :position, :name_only
-  
   def initialize(number)
     @number = number
     @position = false
     @name_only = false
-  end
-
-  def number
-    @number
   end
 
   def position?
@@ -242,7 +224,10 @@ class Digit
   end
 end
 
+# Result is a data structure to hold information about the results of a check
 class Result
+  attr_reader :result
+
   def initialize(result, victory)
     @result = result
     @victory = victory
@@ -251,27 +236,19 @@ class Result
   def victory?
     @victory
   end
-
-  def result
-    @result
-  end
 end
 
-def get_decision(a,b)
+def get_decision(a, b)
   loop do
     response = gets.chomp
-    if response == a
-      return true
-    elsif response == b
-      return false
-    else
-      puts "Please type '#{a}' or '#{b}'."
-    end
+    return true if response == a
+    return false if response == b
+    puts "Please type '#{a}' or '#{b}'."
   end
 end
 
 loop do
   Mastermind.new
-  puts "Play again? (y/n)"
-  break unless get_decision('y','n')
+  puts 'Play again? (y/n)'
+  break unless get_decision('y', 'n')
 end
