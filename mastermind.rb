@@ -41,9 +41,9 @@ class Mastermind
     "The computer guessed correct! The Computer wins!\n"
   end
 
-  def defeat
+  def defeat(passcode)
     @lost = true
-    "That was your last turn! You lost D: The password was #{@passcode}.\n"
+    "That was your last turn! You lost D: The password was #{passcode}.\n"
   end
 
   def computer_defeat
@@ -60,27 +60,24 @@ class Mastermind
   def turn(passcode)
     puts "Turn #{@turn}"
     puts 'Guess the passcode.'
-    guess = Passcode.new
-    guess.get_code
+    guess = get_code
     p guess
     check_result = passcode.check_passcode(guess)
     puts check_result.result
     puts victory if check_result.victory? 
     @turn += 1
-    puts defeat if @turn == 13
+    puts defeat(passcode) if @turn == 13
   end
 
   def computer_guesser
     puts 'Type your secret passcode.'
-    passcode = Passcode.new
-    passcode.get_code
+    passcode = get_code
     passcode = computer_turn(passcode) until @lost || @won
   end
 
   def computer_turn(passcode)
     puts "Turn #{@turn}"
-    guess = Passcode.new
-    guess.computer_guess(passcode)
+    guess = computer_guess(passcode)
     p guess
     check_result = passcode.check_passcode(guess)
     puts check_result.result
@@ -100,12 +97,20 @@ class Passcode
     @size = 4
   end
 
+  def size
+    @size
+  end
+
   def [](ind)
     @passcode[ind]
   end
 
   def []=(ind, value)
     @passcode[ind] = value
+  end
+
+  def add(digit)
+    @passcode.push(digit)
   end
 
   def create_passcode
@@ -119,17 +124,19 @@ class Passcode
   end
 
   def get_code
+    code = Passcode.new
     loop do
-      code = gets.chomp.chars
-      if code.size == @size && illegal_characters?(code)
-        4.times { |i| @passcode.push(Digit.new(code.unshift))}
+      user_code = gets.chomp.chars
+      if user_code.size == code.size && illegal_characters?(user_code)
+        4.times { |i| code.add(Digit.new(user_code.unshift))}
         break
-      elsif code.size != @size
+      elsif user_code.size != code.size
         puts "Your guess must have #{@size} characters."
       else
         puts 'Please only use the numbers 1-6 in your answers.'
       end
     end
+    code
   end
 
   #TODO: undefined method 'number' on nilclass (Probably guess)
@@ -162,8 +169,19 @@ class Passcode
 
   def all_correct?
     bool = true
-    @passcode.each { |digit| bool = false unless digit.position }
+    @passcode.each { |digit| bool = false unless digit.position? }
     bool
+  end
+
+  def correct_positions
+    count = 0
+    @passcode.each {|digit| count += 1 if digit.position?}
+    count
+  end
+
+  def correct_names
+    count = 0
+    @passcode.each { |digit| count += 1 if digit.name_only?}
   end
 
   #TODO: guess has an empty passcode
@@ -171,7 +189,7 @@ class Passcode
   def check_passcode(guess)
     guess = position_check(guess)
     guess = name_only_check(guess)
-    result = "#{number_correct_position}: Correct postion.\n#{number_correct_name}: Correct digit.\n\n"
+    result = "#{guess.correct_positions}: Correct postion.\n#{guess.correct_names}: Correct digit.\n\n"
     if guess.all_correct?
       return Result.new(result, true)
     else
@@ -203,6 +221,14 @@ class Digit
 
   def number
     @number
+  end
+
+  def position?
+    @position
+  end
+
+  def name_only?
+    @name_only
   end
 end
 
